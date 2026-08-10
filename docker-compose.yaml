@@ -1,0 +1,37 @@
+services:
+  db:
+    container_name: db
+    image: postgres:latest
+    volumes:
+      - ./psql:/var/lib/postgresql
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTRGES_USER=$DB_USER
+      - POSTGRES_PASS_FILE=/run/secrets/db_pw
+    health_check:
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}", "-d", "${DB_NAME}"]
+      interval: 10s
+      timeout: 1s
+      retries: 5
+      start_period: 30s
+    restart: always
+    secrets:
+      - db_pw
+  app:
+    container_name: app
+    build: app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTRGES_USER=$DB_USER
+      - POSTGRES_PASS_FILE=/run/secrets/db_pw
+    ports:
+      - ${APP_PORT}:8080
+    health_check: ["CMD", "wget", "--spider", "-q" , "http://localhost:8080/health_check"]
+    secrets:
+      - db_pw
+secrets:
+  db_pw:
+    file: ${DB_PW_FILE}
