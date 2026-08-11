@@ -1,7 +1,7 @@
 package config
 
 import (
-	applogger "app/src/app_logger"
+	applogger "app/internal/app_logger"
 	"fmt"
 	"log"
 	"os"
@@ -10,14 +10,14 @@ import (
 )
 
 type Config struct {
-	POSTGRES_DB        string
-	POSTRGES_USER      string
-	POSTGRES_PASS_FILE string
+	POSTGRES_DB            string
+	POSTRGES_USER          string
+	POSTGRES_PASSWORD_FILE string
 
 	DB_HOST string
 	DB_PORT uint
 
-	POSTGRES_PASS string
+	POSTGRES_PASSWORD string
 
 	HOST string
 	PORT uint
@@ -59,24 +59,25 @@ func (*Config) init() {
 	logger = applogger.NewLogger("Config")
 
 	instance = Config{
-		POSTGRES_DB:        getStringEnv("POSGRES_DB", "default"),
-		POSTRGES_USER:      getStringEnv("POSGRES_USER", "postgres"),
-		POSTGRES_PASS_FILE: getStringEnv("POSTGRES_PASS_FILE", "/run/secrets/db_pw"),
-		DB_HOST:            getStringEnv("DB_HOST", "db"),
-		DB_PORT:            getUintEnv("DB_PORT", 5432),
-		HOST:               getStringEnv("HOST", "0.0.0.0"),
-		PORT:               getUintEnv("PORT", 8080),
+		POSTGRES_DB:            getStringEnv("POSGRES_DB", "default"),
+		POSTRGES_USER:          getStringEnv("POSGRES_USER", "postgres"),
+		POSTGRES_PASSWORD_FILE: getStringEnv("POSTGRES_PASS_FILE", "/run/secrets/db_pw"),
+		DB_HOST:                getStringEnv("DB_HOST", "db"),
+		DB_PORT:                getUintEnv("DB_PORT", 5432),
+		HOST:                   getStringEnv("HOST", "0.0.0.0"),
+		PORT:                   getUintEnv("PORT", 8080),
 	}
 
-	password_bytes, err := os.ReadFile(instance.POSTGRES_PASS_FILE)
+	password_bytes, err := os.ReadFile(instance.POSTGRES_PASSWORD_FILE)
 
 	if err != nil {
 		applogger.Warning(logger, fmt.Sprintf("Got error: %s", err.Error()))
-		instance.POSTGRES_PASS = "defaultpass"
+		instance.POSTGRES_PASSWORD = "defaultpass"
 		initErr = err
 	} else {
-		instance.POSTGRES_PASS = string(password_bytes)
+		instance.POSTGRES_PASSWORD = string(password_bytes)
 	}
+	applogger.Info(logger, "Config initiated")
 }
 
 func Get() (*Config, error) {

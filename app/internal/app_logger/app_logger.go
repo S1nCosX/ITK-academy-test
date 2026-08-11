@@ -4,8 +4,8 @@ import "log"
 
 func NewLogger(name string) *log.Logger {
 	logger := log.New(
-		log.Default().Writer(),
-		name,
+		log.Writer(),
+		"["+name+"] ",
 		log.Ldate|log.Ltime,
 	)
 	return logger
