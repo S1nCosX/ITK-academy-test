@@ -14,4 +14,6 @@ if "%~1" == "--start" (
     ) else (
         docker compose --env-file ./config.env up
     )
+) else if "%~1" == "--test" (
+    docker build --target test ./app
 ) 

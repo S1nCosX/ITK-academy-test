@@ -16,5 +16,7 @@ if [ -n "$1" ]; then
         fi
     elif [ $1 = "--stop" ]; then
         docker compose down
+    elif [ $1 = "--test" ]; then
+        docker build --target test ./app
     fi
 fi

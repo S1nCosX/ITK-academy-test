@@ -17,3 +17,15 @@ func FromString(str string) (OperationType, error) {
 	err := InvalidOperationTypeString{}
 	return 0, err
 }
+
+func ToString(t OperationType) (string, error) {
+
+	switch t {
+	case DEPOSIT:
+		return "DEPOSIT", nil
+	case WITHDRAW:
+		return "WITHDRAW", nil
+	}
+	err := InvalidOperationTypeValue{}
+	return "", err
+}

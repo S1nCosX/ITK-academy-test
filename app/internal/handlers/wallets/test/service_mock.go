@@ -19,6 +19,7 @@ type ServiceMock struct {
 	CreateReturns *CreateData
 	ReadReturns   *ReadUpdateData
 	UpdateReturns *ReadUpdateData
+	UpdatedWallet *dto.WalletDTO
 }
 
 func (self ServiceMock) Create() (ret string, err error) {
@@ -29,6 +30,6 @@ func (self ServiceMock) Read(uuid *string) (ret dto.WalletDTO, err error) {
 	return self.ReadReturns.W, self.ReadReturns.E
 }
 func (self ServiceMock) Update(new *dto.WalletDTO) (ret dto.WalletDTO, err error) {
-
+	*self.UpdatedWallet = *new
 	return self.UpdateReturns.W, self.UpdateReturns.E
 }
