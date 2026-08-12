@@ -1,9 +1,15 @@
-FROM golang:1.26.4-alpine3.24 AS builder
+FROM golang:1.26.4-alpine3.24 AS base
 WORKDIR /src
 COPY . .
+RUN go mod download
+
+FROM base as test
+RUN go test -v -race -cover ./...
+
+FROM base as build
 RUN GOOS=linux go build -a -o app .
 
 FROM alpine:3.24
 WORKDIR /root/
-COPY --from=builder /src/app .
+COPY --from=build /src/app .
 CMD ["./app"] 
