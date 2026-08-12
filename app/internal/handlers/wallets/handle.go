@@ -1,17 +1,114 @@
-package wallet
+package wallets
 
 import (
+	applogger "app/internal/app_logger"
+	"app/internal/db/dto"
+	"app/internal/db/services/wallet_service"
+	operationtype "app/internal/enums/operationType"
 	responsewriter "app/internal/response_writer"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
-var base_addr = "api/v1/wallets"
+var (
+	base_addr = "/api/v1/wallets"
+	logger    applogger.Apploger
+)
 
 func Handle(mux *http.ServeMux) {
-	mux.HandleFunc("GET "+base_addr+"{WALLET_UUID}", getWallet)
+	logger = applogger.NewLogger("Wallet handler")
+
+	mux.HandleFunc("PUT "+base_addr, createWallet)
+	logger.Info("Listening PUT on addr: " + base_addr)
+
+	mux.HandleFunc("GET "+base_addr+"/{WALLET_UUID}", readWallet)
+	logger.Info("Listening GET on addr: " + base_addr + "/{WALLET_UUID}")
+
+	mux.HandleFunc("POST "+base_addr, updateWallet)
+	logger.Info("Listening POST on addr: " + base_addr)
+
 }
 
-func getWallet(w http.ResponseWriter, r *http.Request) {
+func createWallet(w http.ResponseWriter, r *http.Request) {
+	id, err := wallet_service.Create()
+	if err != nil {
+		responsewriter.WriteResponse(w, fmt.Sprintf("DB error: %s", err), http.StatusInternalServerError)
+		return
+	}
+	logger.Info(fmt.Sprint("Created new wallet", id))
+	responsewriter.WriteResponse(w, id, http.StatusOK)
+}
 
-	responsewriter.WriteResponse(w, "got u", http.StatusOK)
+func readWallet(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("WALLET_UUID")
+	wallet, err := wallet_service.Read(&id)
+	if err != nil {
+		responsewriter.WriteResponse(w, "No such wallet", http.StatusNotFound)
+		return
+	}
+	encodeAndResponseWalletsDTO(&wallet, w)
+}
+
+func updateWallet(w http.ResponseWriter, r *http.Request) {
+	containsJson := false
+	for _, contentType := range strings.Split(r.Header.Get("Content-Type"), ";") {
+		if match, err := regexp.Match("application/(json|text)", []byte(contentType)); match && err == nil {
+			containsJson = true
+		}
+	}
+
+	if !containsJson {
+		responsewriter.WriteResponse(w, "Does not contains json or text", http.StatusNotAcceptable)
+		return
+	}
+
+	var modification WalletModification
+	if err := json.NewDecoder(r.Body).Decode(&modification); err != nil {
+		responsewriter.WriteResponse(w, fmt.Sprint("Got error in decoding json: ", err), http.StatusInternalServerError)
+		return
+	}
+
+	wallet, err := wallet_service.Read(&modification.WalletId)
+	if err != nil {
+		responsewriter.WriteResponse(w, "No such wallet", http.StatusBadRequest)
+		return
+	}
+
+	operation, err := operationtype.FromString(modification.OperationType)
+	if err != nil {
+		responsewriter.WriteResponse(w, "invalid operation type", http.StatusBadRequest)
+		return
+	}
+
+	switch operation {
+	case operationtype.DEPOSIT:
+		wallet.Balance += modification.Amount
+		break
+	case operationtype.WITHDRAW:
+		if wallet.Balance < modification.Amount {
+			responsewriter.WriteResponse(w, "Not enough money to withdraw", http.StatusBadRequest)
+			return
+		}
+		wallet.Balance -= modification.Amount
+		break
+	}
+	if updatedWallet, err := wallet_service.Update(&wallet); err != nil {
+		responsewriter.WriteResponse(w, fmt.Sprint("DB error: ", err), http.StatusInternalServerError)
+		return
+	} else {
+		encodeAndResponseWalletsDTO(&updatedWallet, w)
+	}
+}
+
+func encodeAndResponseWalletsDTO(wallet *dto.WalletDTO, w http.ResponseWriter) {
+	encoded, err := json.Marshal(wallet)
+
+	if err != nil {
+		responsewriter.WriteResponse(w, "Encoding answer error", http.StatusInternalServerError)
+		return
+	}
+	responsewriter.WriteResponse(w, string(encoded), http.StatusOK)
 }

@@ -3,7 +3,6 @@ package config
 import (
 	applogger "app/internal/app_logger"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"sync"
@@ -27,13 +26,13 @@ var (
 	instance Config
 	once     sync.Once
 	initErr  error
-	logger   *log.Logger
+	logger   applogger.Apploger
 )
 
 func getStringEnv(name string, defaultValue string) string {
 	value, isExist := os.LookupEnv(name)
 	if isExist {
-		applogger.Warning(logger, fmt.Sprintf("Cannot read environment %s, so using default value: %s", name, defaultValue))
+		logger.Warning(fmt.Sprintf("Cannot read environment %s, so using default value: %s", name, defaultValue))
 		return value
 	}
 	return defaultValue
@@ -42,12 +41,12 @@ func getStringEnv(name string, defaultValue string) string {
 func getUintEnv(name string, defaultValue uint) uint {
 	value, isExist := os.LookupEnv(name)
 	if isExist {
-		applogger.Warning(logger, fmt.Sprintf("Cannot read environment %s. So using default value: %s", name, defaultValue))
+		logger.Warning(fmt.Sprintf("Cannot read environment %s. So using default value: %s", name, defaultValue))
 
 		parsedValue, err := strconv.ParseUint(value, 10, 32)
 
 		if err != nil {
-			applogger.Warning(logger, fmt.Sprintf("Environment variable %s contains not uint value: %s. So using default value instead: %s", name, value, defaultValue))
+			logger.Warning(fmt.Sprintf("Environment variable %s contains not uint value: %s. So using default value instead: %s", name, value, defaultValue))
 			return defaultValue
 		}
 		return uint(parsedValue)
@@ -71,13 +70,13 @@ func (*Config) init() {
 	password_bytes, err := os.ReadFile(instance.POSTGRES_PASSWORD_FILE)
 
 	if err != nil {
-		applogger.Warning(logger, fmt.Sprintf("Got error: %s", err.Error()))
+		logger.Warning(fmt.Sprintf("Got error: %s", err.Error()))
 		instance.POSTGRES_PASSWORD = "defaultpass"
 		initErr = err
 	} else {
 		instance.POSTGRES_PASSWORD = string(password_bytes)
 	}
-	applogger.Info(logger, "Config initiated")
+	logger.Info("Config initiated")
 }
 
 func Get() (*Config, error) {

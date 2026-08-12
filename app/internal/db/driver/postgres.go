@@ -5,7 +5,6 @@ import (
 	"app/internal/config"
 	"database/sql"
 	"fmt"
-	"log"
 	"sync"
 
 	_ "github.com/lib/pq"
@@ -19,7 +18,7 @@ var (
 	once     sync.Once
 	instance PostgresDriver
 	initErr  error
-	logger   *log.Logger
+	logger   applogger.Apploger
 )
 
 func (*PostgresDriver) init() {
@@ -27,14 +26,14 @@ func (*PostgresDriver) init() {
 
 	conf, err := config.Get()
 	if err != nil {
-		applogger.Error(logger, "Config initiated with error")
+		logger.Error("Config initiated with error")
 	}
 
 	conn_str := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", conf.DB_HOST, conf.DB_PORT, conf.POSTRGES_USER, conf.POSTGRES_PASSWORD, conf.POSTGRES_DB)
 
 	instance.Conn, err = sql.Open("postgres", conn_str)
 	if err != nil {
-		logger.Panicf("Got error during db connection: %s", err)
+		logger.Error(fmt.Sprintf("Got error during db connection: %s", err))
 	}
 }
 

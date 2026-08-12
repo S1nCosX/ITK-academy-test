@@ -2,27 +2,31 @@ package applogger
 
 import "log"
 
-func NewLogger(name string) *log.Logger {
-	logger := log.New(
-		log.Writer(),
-		"["+name+"] ",
-		log.Ldate|log.Ltime,
-	)
-	return logger
+type Apploger struct {
+	logger *log.Logger
 }
 
-func Warning(logger *log.Logger, message string) {
-	logger.Printf("WARN : %s", message)
+func NewLogger(name string) Apploger {
+	return Apploger{
+		logger: log.New(
+			log.Writer(),
+			"["+name+"] ",
+			log.Ldate|log.Ltime),
+	}
 }
 
-func Info(logger *log.Logger, message string) {
-	logger.Printf("INFO : %s", message)
+func (self Apploger) Warning(message string) {
+	self.logger.Printf("WARN : %s", message)
 }
 
-func Error(logger *log.Logger, message string) {
-	logger.Panicf("ERROR : %s", message)
+func (self Apploger) Info(message string) {
+	self.logger.Printf("INFO : %s", message)
 }
 
-func Fatal(logger *log.Logger, message string) {
-	logger.Fatalf("FATAL : %s", message)
+func (self Apploger) Error(message string) {
+	self.logger.Panicf("ERROR : %s", message)
+}
+
+func (self Apploger) Fatal(message string) {
+	self.logger.Fatalf("FATAL : %s", message)
 }
