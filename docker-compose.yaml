@@ -17,10 +17,31 @@ services:
     restart: always
     secrets:
       - db_pw
+
+  migrations:
+    image: migrate/migrate:4
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: ["/bin/sh", "-c"]
+    environment:
+      - POSTGRES_DB=$DB_NAME
+      - POSTRGES_USER=$DB_USER
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_pw
+    command:
+      - >
+        migrate -path /migrations -database "postgres://$$POSTRGES_USER:$$(cat $$POSTGRES_PASSWORD_FILE)@db:5432/$$POSTGRES_DB?sslmode=disable" up
+    depends_on:
+      db:
+        condition: service_healthy
+    secrets:
+      - db_pw
+
   app:
     container_name: app
     build: app
     depends_on:
+      migrations:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
     environment:
