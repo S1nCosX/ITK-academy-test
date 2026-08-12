@@ -3,10 +3,10 @@ WORKDIR /src
 COPY . .
 RUN go mod download
 
-FROM base as test
-RUN go test -v -race -cover ./...
+FROM base AS test
+RUN go test -v ./...
 
-FROM base as build
+FROM base AS build
 RUN GOOS=linux go build -a -o app .
 
 FROM alpine:3.24

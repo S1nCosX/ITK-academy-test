@@ -41,12 +41,12 @@ func getStringEnv(name string, defaultValue string) string {
 func getUintEnv(name string, defaultValue uint) uint {
 	value, isExist := os.LookupEnv(name)
 	if isExist {
-		logger.Warning(fmt.Sprintf("Cannot read environment %s. So using default value: %s", name, defaultValue))
+		logger.Warning(fmt.Sprintf("Cannot read environment %s. So using default value: %d", name, defaultValue))
 
 		parsedValue, err := strconv.ParseUint(value, 10, 32)
 
 		if err != nil {
-			logger.Warning(fmt.Sprintf("Environment variable %s contains not uint value: %s. So using default value instead: %s", name, value, defaultValue))
+			logger.Warning(fmt.Sprintf("Environment variable %s contains not uint value: %s. So using default value instead: %d", name, value, defaultValue))
 			return defaultValue
 		}
 		return uint(parsedValue)

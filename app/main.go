@@ -3,6 +3,7 @@ package main
 import (
 	applogger "app/internal/app_logger"
 	"app/internal/config"
+	"app/internal/db/services/wallet_service"
 	"app/internal/handlers/healthcheck"
 	"app/internal/handlers/wallets"
 	"fmt"
@@ -15,6 +16,8 @@ func main() {
 	mux := http.NewServeMux()
 
 	healthcheck.Handle(mux)
+
+	wallets.Init(wallet_service.GetWalletService())
 	wallets.Handle(mux)
 
 	config, err := config.Get()

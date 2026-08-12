@@ -8,22 +8,26 @@ import (
 	"sync"
 )
 
-var (
+type WalletService struct {
 	postgres *driver.PostgresDriver
 	err      error
 	logger   applogger.Apploger
 	once     sync.Once
+}
+
+var (
+	instance WalletService
 )
 
-func Create() (ret string, err error) {
-	once.Do(Init)
+func (self WalletService) Create() (ret string, err error) {
+	self.once.Do(self.init)
 	query := "INSERT INTO wallets (walletId, balance) VALUES (uuidv4(), 0) RETURNING walletId"
-	err = postgres.Conn.QueryRow(query).Scan(&ret)
+	err = self.postgres.Conn.QueryRow(query).Scan(&ret)
 	return ret, err
 }
 
-func Read(uuid *string) (ret dto.WalletDTO, err error) {
-	once.Do(Init)
+func (self WalletService) Read(uuid *string) (ret dto.WalletDTO, err error) {
+	self.once.Do(self.init)
 	query :=
 		`SELECT 
 	walletId,
@@ -32,14 +36,14 @@ FROM wallets
 WHERE
 	walletId = $1`
 
-	err = postgres.Conn.QueryRow(query, uuid).Scan(
+	err = self.postgres.Conn.QueryRow(query, uuid).Scan(
 		&ret.WalletId,
 		&ret.Balance)
 	return ret, err
 }
 
-func Update(new *dto.WalletDTO) (ret dto.WalletDTO, err error) {
-	once.Do(Init)
+func (self WalletService) Update(new *dto.WalletDTO) (ret dto.WalletDTO, err error) {
+	self.once.Do(self.init)
 	query :=
 		`UPDATE wallets  
 	SET balance = $2
@@ -49,19 +53,23 @@ RETURNING
 	walletId,
 	balance`
 
-	err = postgres.Conn.QueryRow(query, new.WalletId, new.Balance).Scan(
+	err = self.postgres.Conn.QueryRow(query, new.WalletId, new.Balance).Scan(
 		&ret.WalletId,
 		&ret.Balance)
 	return ret, err
 
 }
 
-func Init() {
-	postgres, err = driver.Get()
-	logger = applogger.NewLogger("Subscription service")
+func (self WalletService) init() {
+	self.postgres, self.err = driver.Get()
+	self.logger = applogger.NewLogger("Subscription service")
 
-	if err != nil {
-		logger.Error(fmt.Sprintf("Init error. Database driver getting got err: %s", err))
+	if self.err != nil {
+		self.logger.Error(fmt.Sprintf("Init error. Database driver getting got err: %s", self.err))
 	}
-	logger.Info("Initializated")
+	self.logger.Info("Initializated")
+}
+
+func GetWalletService() *WalletService {
+	return &instance
 }
